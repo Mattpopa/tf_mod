@@ -13,7 +13,6 @@ data "terraform_remote_state" "dbs" {
 }
 
 data "template_file" "user_data" {
-   #template = "${file("../../../modules/services/webcluster/user_data.sh")}"
     template = "${file("${path.module}/user_data.sh")}"
 
         vars {
@@ -105,8 +104,7 @@ resource "aws_security_group" "elb" {
 
 resource "aws_security_group_rule" "allow_http_inbound" {
     type = "ingress"
-    security_group_id = "$[aws_security_group_elb.id]"
-    
+    security_group_id = "${aws_security_group_elb.id}"
     from_port = 80
     to_port = 80
     protocol = "tcp"
@@ -116,10 +114,9 @@ resource "aws_security_group_rule" "allow_http_inbound" {
 resource "aws_security_group_rule" "allow_http_outbound" {
     type = "egress"
     security_group_id = "${aws_security_group.elb.id}"
-
     from_port = 0
     to_port = 0
-    protocol = "tcp"
+    protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
 }
 
