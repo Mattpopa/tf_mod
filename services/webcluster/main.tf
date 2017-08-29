@@ -83,7 +83,7 @@ resource "aws_autoscaling_schedule" "scale_out" {
     max_size = "${var.max_size}"
     desired_capacity      = "${var.desired}"
     recurrence            = "0 9 * * *"
-    autoscaling_group_name = "${module.webcluster.asg_name}"
+    autoscaling_group_name = "${aws_autoscaling_group.wip-020817.name}"
 }
 
 resource "aws_autoscaling_schedule" "scale_in" {
@@ -93,7 +93,7 @@ resource "aws_autoscaling_schedule" "scale_in" {
     max_size = "${var.max_size}"
     desired_capacity      = "${var.desired}"
     recurrence            = "0 17 * * *"
-    autoscaling_group_name = "${module.webcluster.asg_name}"
+    autoscaling_group_name = "${aws_autoscaling_group.wip-020817.name}"
 }
 
 resource "aws_elb" "wip-elb" {
