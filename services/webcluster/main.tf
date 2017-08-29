@@ -65,18 +65,35 @@ resource "aws_security_group" "instance2" {
 resource "aws_autoscaling_group" "wip-020817" {
     launch_configuration = "${aws_launch_configuration.wip-020817.id}"
     availability_zones = ["${data.aws_availability_zones.all.names}"]
-    
     load_balancers = ["${aws_elb.wip-elb.name}"]
     health_check_type = "ELB"
-
     min_size = "${var.min_size}" 
     max_size = "${var.max_size}"
-
     tag {
         key = "Name"
         value = "${var.cluster_name}-wip-asg-060817"
         propagate_at_launch = true
     }
+}
+
+resource "aws_autoscaling_schedule" "scale_out" {
+    count = "${var.enable_autoscaling}"
+    scheduled_action_name = "scale-out-during-business-hours"
+    min_size = "${var.min_size}" 
+    max_size = "${var.max_size}"
+    desired_capacity      = "${var.desired}"
+    recurrence            = "0 9 * * *"
+    autoscaling_group_name = "${module.webcluster.asg_name}"
+}
+
+resource "aws_autoscaling_schedule" "scale_in" {
+    count = "${var.enable_autoscaling}"
+    scheduled_action_name = "scale-in-at-night"
+    min_size = "${var.min_size}" 
+    max_size = "${var.max_size}"
+    desired_capacity      = "${var.desired}"
+    recurrence            = "0 17 * * *"
+    autoscaling_group_name = "${module.webcluster.asg_name}"
 }
 
 resource "aws_elb" "wip-elb" {
