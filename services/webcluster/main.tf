@@ -13,12 +13,20 @@ data "terraform_remote_state" "dbs" {
 }
 
 data "template_file" "user_data" {
+    count = "${1 - var.user_data_v2}"
     template = "${file("${path.module}/user_data.sh")}"
+    vars {
+        server_port = "${var.server_port}"
+        db_address = "${data.terraform_remote_state.dbs.address}"
+        db_port = "${data.terraform_remote_state.dbs.port}"
+        }
+}
 
-        vars {
-            server_port = "${var.server_port}"
-            db_address = "${data.terraform_remote_state.dbs.address}"
-            db_port = "${data.terraform_remote_state.dbs.port}"
+data "template_file" "user_data_v2" {
+    count = "${var.user_data_v2}"
+    template = "${file("${path.module}/user_data_v2.sh")}"
+    vars {
+        server_port = "${var.server_port}"
         }
 }
 
@@ -27,10 +35,7 @@ resource "aws_launch_configuration" "wip-020817" {
     instance_type = "${var.instance_type}"
     key_name = "mpopa"
     security_groups = ["${aws_security_group.instance.id}", "${aws_security_group.instance2.id}"]
-
-    #user_data = "${file("user_data.sh")}"
-    user_data = "${data.template_file.user_data.rendered}"
-
+    user_data = "${element(concat(data.template_file.user_data.*.rendered, data.template_file.user_data_v2.*.rendered), 0)}"
    lifecycle {
         create_before_destroy = true
     }
@@ -77,23 +82,23 @@ resource "aws_autoscaling_group" "wip-020817" {
 }
 
 resource "aws_autoscaling_schedule" "scale_out" {
-    count = "${var.enable_autoscaling}"
+    count = "${var.enable_autoscaling ? 1 : 0}"
     scheduled_action_name = "scale-out-during-business-hours"
     min_size = "${var.min_size}" 
     max_size = "${var.max_size}"
     desired_capacity      = "${var.desired}"
     recurrence            = "0 9 * * *"
-    autoscaling_group_name = "${module.webcluster.asg_name}"
+    autoscaling_group_name = "${aws_autoscaling_group.wip-020817.name}"
 }
 
 resource "aws_autoscaling_schedule" "scale_in" {
-    count = "${var.enable_autoscaling}"
+    count = "${var.enable_autoscaling ? 1 : 0}"
     scheduled_action_name = "scale-in-at-night"
     min_size = "${var.min_size}" 
     max_size = "${var.max_size}"
     desired_capacity      = "${var.desired}"
     recurrence            = "0 17 * * *"
-    autoscaling_group_name = "${module.webcluster.asg_name}"
+    autoscaling_group_name = "${aws_autoscaling_group.wip-020817.name}"
 }
 
 resource "aws_elb" "wip-elb" {
