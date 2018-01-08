@@ -31,6 +31,6 @@ variable "enable_autoscaling" {
   description = "autoscaling true/false"
 }
 
-variable "user_data_v2" {
-  description = "if true, then enable the new user_data vers."
+variable "app_data_v2" {
+  description = "if true, then enable the new app_data vers."
 }

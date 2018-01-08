@@ -4,17 +4,17 @@ data "terraform_remote_state" "dbs" {
   backend = "s3"
   environment = "${terraform.env}"
   config {
-    bucket  = "wip-tf-state-080817"
+    bucket  = "digital-tf-state"
     key     = "dbs"
     region  = "eu-central-1"
     encrypt = true
-    profile = "cyclones-dev"
+    profile = "digit-all"
   }
 }
 
-data "template_file" "user_data" {
-    count = "${1 - var.user_data_v2}"
-    template = "${file("${path.module}/user_data.sh")}"
+data "template_file" "app_data" {
+    count = "${1 - var.app_data_v2}"
+    template = "${file("${path.module}/app_data.sh")}"
     vars {
         server_port = "${var.server_port}"
         db_address = "${data.terraform_remote_state.dbs.address}"
@@ -22,9 +22,9 @@ data "template_file" "user_data" {
         }
 }
 
-data "template_file" "user_data_v2" {
-    count = "${var.user_data_v2}"
-    template = "${file("${path.module}/user_data_v2.sh")}"
+data "template_file" "app_data_v2" {
+    count = "${var.app_data_v2}"
+    template = "${file("${path.module}/app_data_v2.sh")}"
     vars {
         server_port = "${var.server_port}"
         }
@@ -35,10 +35,11 @@ resource "aws_launch_configuration" "wip-020817" {
     instance_type = "${var.instance_type}"
     key_name = "mpopa"
     security_groups = ["${aws_security_group.instance.id}", "${aws_security_group.instance2.id}"]
-    user_data = "${element(concat(data.template_file.user_data.*.rendered, data.template_file.user_data_v2.*.rendered), 0)}"
-   lifecycle {
+    user_data = "${element(concat(data.template_file.app_data.*.rendered, data.template_file.app_data_v2.*.rendered), 0)}"
+    lifecycle {
         create_before_destroy = true
     }
+
 }
 
 resource "aws_security_group" "instance" {
@@ -136,10 +137,8 @@ resource "aws_security_group_rule" "allow_http_inbound" {
 resource "aws_security_group_rule" "allow_http_outbound" {
     type = "egress"
     security_group_id = "${aws_security_group.elb.id}"
-    from_port = 0
+    from_port = 0 
     to_port = 0
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
 }
-
-

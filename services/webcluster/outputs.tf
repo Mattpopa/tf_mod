@@ -7,5 +7,6 @@ output "asg_name" {
 output "elb_security_group_id" {
     value = "${aws_security_group.elb.id}"
 }
-
-
+output "ec2_dns_name" {
+    value = "${aws_launch_configuration.wip-020817.dns_name}"
+}
